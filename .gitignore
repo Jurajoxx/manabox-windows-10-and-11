@@ -1,0 +1,3 @@
+# Build output (the release workflow publishes the .exe on GitHub Releases)
+dist/
+*.tmp

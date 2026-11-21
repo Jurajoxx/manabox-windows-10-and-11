@@ -1,0 +1,387 @@
+<Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="{StaticResource Bg}">
+  <Grid.Resources>
+    <DataTemplate x:Key="Tile">
+      <Border x:Name="sel" Margin="5" Padding="4" CornerRadius="12" BorderThickness="2" BorderBrush="Transparent"
+              Background="Transparent" Cursor="Hand">
+        <StackPanel Width="200">
+          <Grid Width="200" Height="279">
+            <Border CornerRadius="9" Background="{StaticResource Ctl}">
+              <TextBlock Text="{Binding Name, Mode=OneWay}" TextWrapping="Wrap" TextAlignment="Center"
+                         VerticalAlignment="Center" Margin="14" Foreground="{StaticResource Dim}"/>
+            </Border>
+            <Image Source="{Binding Image, Mode=OneWay}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality">
+              <Image.Clip>
+                <RectangleGeometry Rect="0,0,200,279" RadiusX="9" RadiusY="9"/>
+              </Image.Clip>
+            </Image>
+          </Grid>
+          <DockPanel Margin="2,7,2,0">
+            <Border DockPanel.Dock="Left" Padding="6,0,6,1" CornerRadius="8" Background="{StaticResource AccentSoft}"
+                    Margin="0,0,6,0" VerticalAlignment="Center">
+              <TextBlock Text="{Binding QtyLabel, Mode=OneWay}" FontWeight="SemiBold" FontSize="12"/>
+            </Border>
+            <TextBlock Text="{Binding Name, Mode=OneWay}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+          </DockPanel>
+          <DockPanel Margin="2,3,2,2">
+            <TextBlock DockPanel.Dock="Right" Text="{Binding PriceText, Mode=OneWay}" Foreground="{StaticResource Good}"/>
+            <Border x:Name="foil" DockPanel.Dock="Right" Padding="6,0,6,1" CornerRadius="8" Background="{StaticResource Gold}"
+                    Margin="6,0,8,0" VerticalAlignment="Center" Visibility="Collapsed">
+              <TextBlock Text="{Binding FoilLabel, Mode=OneWay}" Foreground="#14161B" FontWeight="SemiBold" FontSize="10"/>
+            </Border>
+            <TextBlock Text="{Binding SetLine, Mode=OneWay}" Foreground="{StaticResource Dim}" TextTrimming="CharacterEllipsis"/>
+          </DockPanel>
+        </StackPanel>
+      </Border>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+          <Setter TargetName="sel" Property="BorderBrush" Value="{StaticResource Accent}"/>
+          <Setter TargetName="sel" Property="Background" Value="#262040"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsFoil}" Value="True">
+          <Setter TargetName="foil" Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+  </Grid.Resources>
+
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="3"/>
+    <RowDefinition Height="*"/>
+    <RowDefinition Height="Auto"/>
+  </Grid.RowDefinitions>
+
+  <!-- Top bar -->
+  <Border Grid.Row="0" Background="{StaticResource Panel}" Padding="14,10">
+    <DockPanel LastChildFill="False">
+      <TextBlock DockPanel.Dock="Left" Text="ManaBox Companion" FontSize="17" FontWeight="SemiBold"
+                 VerticalAlignment="Center" Margin="0,0,20,0"/>
+      <Button x:Name="OpenBtn" DockPanel.Dock="Left" Content="Open ManaBox CSV…" Style="{StaticResource Primary}"
+              ToolTip="Open a collection exported from ManaBox (Ctrl+O)"/>
+      <Button x:Name="ExportBtn" DockPanel.Dock="Left" Content="Export CSV for ManaBox…" Margin="8,0,0,0"
+              ToolTip="Save your edited collection as a CSV you can import back into ManaBox (Ctrl+S)"/>
+      <Button x:Name="RefreshBtn" DockPanel.Dock="Left" Content="Refresh prices" Margin="8,0,0,0"
+              ToolTip="Download the latest card data and prices from Scryfall"/>
+      <ComboBox x:Name="CurrencyBox" DockPanel.Dock="Right" Width="78"/>
+      <TextBlock DockPanel.Dock="Right" Text="Prices in" Foreground="{StaticResource Dim}" VerticalAlignment="Center"
+                 Margin="18,0,8,0"/>
+      <TextBlock x:Name="FileLabel" DockPanel.Dock="Right" Foreground="{StaticResource Dim}" VerticalAlignment="Center"
+                 TextTrimming="CharacterEllipsis" MaxWidth="380"/>
+    </DockPanel>
+  </Border>
+  <ProgressBar x:Name="Progress" Grid.Row="1" Height="3" Minimum="0" Maximum="1" Visibility="Hidden"/>
+
+  <TabControl x:Name="Tabs" Grid.Row="2">
+
+    <!-- ===================== COLLECTION ===================== -->
+    <TabItem Header="Collection">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="340"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.ColumnSpan="2" Padding="12,10,12,4" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1">
+          <WrapPanel>
+            <TextBox x:Name="SearchBox" Width="270" Margin="0,0,10,6"
+                     Tag="Search name, type, rules text…"
+                     ToolTip="Type words to search. Prefixes: t:goblin (type), o:flying (rules text), s:mh2 (set), r:mythic (rarity)"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,8,6" VerticalAlignment="Center">
+              <ToggleButton x:Name="ColW" Content="W" Style="{StaticResource Pip}" Background="#F3EFD9" Foreground="#14161B" ToolTip="White"/>
+              <ToggleButton x:Name="ColU" Content="U" Style="{StaticResource Pip}" Background="#4A90D9" Foreground="White" ToolTip="Blue"/>
+              <ToggleButton x:Name="ColB" Content="B" Style="{StaticResource Pip}" Background="#6B6078" Foreground="White" ToolTip="Black"/>
+              <ToggleButton x:Name="ColR" Content="R" Style="{StaticResource Pip}" Background="#D9534A" Foreground="White" ToolTip="Red"/>
+              <ToggleButton x:Name="ColG" Content="G" Style="{StaticResource Pip}" Background="#3FA35B" Foreground="White" ToolTip="Green"/>
+              <ToggleButton x:Name="ColC" Content="C" Style="{StaticResource Pip}" Background="#A8B0BD" Foreground="#14161B" ToolTip="Colourless"/>
+            </StackPanel>
+            <ComboBox x:Name="RarityBox" Width="125" Margin="0,0,8,6"/>
+            <ComboBox x:Name="TypeBox" Width="130" Margin="0,0,8,6"/>
+            <ComboBox x:Name="SetBox" Width="210" Margin="0,0,8,6"/>
+            <ComboBox x:Name="FoilBox" Width="115" Margin="0,0,8,6"/>
+            <ComboBox x:Name="BinderBox" Width="160" Margin="0,0,8,6"/>
+            <StackPanel Orientation="Horizontal" Margin="6,0,8,6">
+              <TextBlock Text="Sort" Foreground="{StaticResource Dim}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+              <ComboBox x:Name="SortBox" Width="135"/>
+              <Button x:Name="SortDirBtn" Content="A → Z" Margin="6,0,0,0" MinWidth="64" ToolTip="Reverse the sort order"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="6,0,8,6">
+              <RadioButton x:Name="ViewGallery" Content="Gallery" Style="{StaticResource Seg}" GroupName="view" IsChecked="True"/>
+              <RadioButton x:Name="ViewList" Content="List" Style="{StaticResource Seg}" GroupName="view" Margin="-1,0,0,0"/>
+            </StackPanel>
+            <Button x:Name="ResetBtn" Content="Reset filters" Margin="6,0,0,6"/>
+          </WrapPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+          <ItemsControl x:Name="Gallery" Focusable="False" Margin="8,6,0,0"
+                        VirtualizingPanel.IsVirtualizing="True"
+                        VirtualizingPanel.ScrollUnit="Pixel"
+                        VirtualizingPanel.VirtualizationMode="Recycling"
+                        ScrollViewer.CanContentScroll="True">
+            <ItemsControl.Template>
+              <ControlTemplate TargetType="ItemsControl">
+                <ScrollViewer x:Name="sv" Focusable="False" CanContentScroll="True" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                  <ItemsPresenter/>
+                </ScrollViewer>
+              </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource Tile}" Focusable="False">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                </ItemsControl>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <DataGrid x:Name="ListGrid" Visibility="Collapsed" SelectionMode="Extended">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Qty" Binding="{Binding Quantity, Mode=OneWay}" SortMemberPath="Quantity" Width="52" ElementStyle="{StaticResource CellR}"/>
+              <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=OneWay}" SortMemberPath="Name" Width="3*" MinWidth="150" ElementStyle="{StaticResource CellL}"/>
+              <DataGridTextColumn Header="Set" Binding="{Binding SetCode, Mode=OneWay}" SortMemberPath="Set" Width="58"/>
+              <DataGridTextColumn Header="#" Binding="{Binding Number, Mode=OneWay}" SortMemberPath="Number" Width="52"/>
+              <DataGridTextColumn Header="Type" Binding="{Binding TypeLine, Mode=OneWay}" SortMemberPath="Type" Width="2.4*" MinWidth="110" ElementStyle="{StaticResource CellL}"/>
+              <DataGridTextColumn Header="Mana" Binding="{Binding ManaCost, Mode=OneWay}" SortMemberPath="Mana value" Width="96" ElementStyle="{StaticResource CellL}"/>
+              <DataGridTextColumn Header="Rarity" Binding="{Binding RarityLabel, Mode=OneWay}" SortMemberPath="Rarity" Width="98"/>
+              <DataGridTextColumn Header="Finish" Binding="{Binding FinishLabel, Mode=OneWay}" SortMemberPath="Finish" Width="66"/>
+              <DataGridTextColumn Header="Condition" Binding="{Binding ConditionLabel, Mode=OneWay}" SortMemberPath="Condition" Width="100"/>
+              <DataGridTextColumn Header="Lang" Binding="{Binding Language, Mode=OneWay}" CanUserSort="False" Width="50"/>
+              <DataGridTextColumn Header="Binder" Binding="{Binding Binder, Mode=OneWay}" SortMemberPath="Binder" Width="1.6*" MinWidth="90" ElementStyle="{StaticResource CellL}"/>
+              <DataGridTextColumn Header="Price" Binding="{Binding PriceText, Mode=OneWay}" SortMemberPath="Price" Width="84" ElementStyle="{StaticResource CellR}"/>
+              <DataGridTextColumn Header="Total" Binding="{Binding TotalText, Mode=OneWay}" SortMemberPath="Total value" Width="90" ElementStyle="{StaticResource CellGood}"/>
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <TextBlock x:Name="NoResults" Text="No cards match these filters." Foreground="{StaticResource Dim}" FontSize="15"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+        </Grid>
+
+        <!-- Details -->
+        <Border Grid.Row="1" Grid.Column="1" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}"
+                BorderThickness="1,0,0,0">
+          <DockPanel>
+            <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="16,12,16,14">
+              <StackPanel>
+                <TextBlock x:Name="SelLabel" Text="No cards selected" Foreground="{StaticResource Dim}" Margin="0,0,0,8"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <Button x:Name="EditBtn" Content="Edit…" ToolTip="Change quantity, condition, finish, language, binder or purchase price for every selected entry"/>
+                  <Button x:Name="DeleteBtn" Grid.Column="2" Content="Delete" ToolTip="Remove the selected entries from the collection (Del)"/>
+                </Grid>
+                <DockPanel Margin="0,8,0,0">
+                  <Button x:Name="AddDeckBtn" DockPanel.Dock="Right" Content="Add to deck" Margin="8,0,0,0"/>
+                  <ComboBox x:Name="DeckPick"/>
+                </DockPanel>
+                <Button x:Name="PrintBtn" Content="Print list…" Margin="0,8,0,0"
+                        ToolTip="Print the selected entries, or everything currently shown if nothing is selected"/>
+              </StackPanel>
+            </Border>
+            <Grid>
+              <TextBlock x:Name="DetailEmpty" Text="Click a card to see it here.&#10;Ctrl+click or Shift+click to select several."
+                         Foreground="{StaticResource Dim}" TextAlignment="Center" TextWrapping="Wrap" Margin="24"
+                         VerticalAlignment="Center"/>
+              <ScrollViewer x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                <StackPanel x:Name="DetailPanel" Margin="18,16,14,16">
+                  <Grid Width="264" Height="368" HorizontalAlignment="Center">
+                    <Border CornerRadius="13" Background="{StaticResource Ctl}"/>
+                    <Image x:Name="DetailImage" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality">
+                      <Image.Clip>
+                        <RectangleGeometry Rect="0,0,264,368" RadiusX="13" RadiusY="13"/>
+                      </Image.Clip>
+                    </Image>
+                  </Grid>
+                  <TextBlock Text="{Binding Name, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,14,0,0"/>
+                  <TextBlock Text="{Binding ManaCost, Mode=OneWay}" Foreground="{StaticResource Gold}" Margin="0,2,0,0"/>
+                  <TextBlock Text="{Binding TypeLine, Mode=OneWay}" Foreground="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                  <TextBlock Text="{Binding OracleText, Mode=OneWay}" TextWrapping="Wrap" Margin="0,10,0,0" LineHeight="19"/>
+                  <Border Height="1" Background="{StaticResource Line}" Margin="0,12,0,10"/>
+                  <TextBlock Text="{Binding SetFull, Mode=OneWay}" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding OwnedText, Mode=OneWay}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                  <TextBlock Text="{Binding ValueText, Mode=OneWay}" Foreground="{StaticResource Good}" TextWrapping="Wrap" Margin="0,4,0,0" FontWeight="SemiBold"/>
+                  <TextBlock Text="{Binding PurchaseText, Mode=OneWay}" Foreground="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                  <TextBlock Text="{Binding MarketText, Mode=OneWay}" Foreground="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                  <Button x:Name="ScryfallBtn" Content="View on Scryfall" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+                </StackPanel>
+              </ScrollViewer>
+            </Grid>
+          </DockPanel>
+        </Border>
+
+        <!-- Welcome -->
+        <Border x:Name="Welcome" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="{StaticResource Bg}">
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="560">
+            <TextBlock Text="Your ManaBox collection, on the big screen" FontSize="26" FontWeight="SemiBold"
+                       TextAlignment="Center" TextWrapping="Wrap"/>
+            <TextBlock TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource Dim}" Margin="0,10,0,22" FontSize="14"
+                       Text="Browse, search, bulk-edit and value your cards, build decks and print lists. Card images and prices come from Scryfall."/>
+            <Border Background="{StaticResource Panel}" CornerRadius="10" Padding="22,18">
+              <StackPanel>
+                <TextBlock TextWrapping="Wrap" FontSize="14" LineHeight="24">
+                  <Run FontWeight="SemiBold" Text="1."/> In ManaBox on your phone, export your collection as a CSV file.<LineBreak/>
+                  <Run FontWeight="SemiBold" Text="2."/> Send the file to this PC (email, cloud drive, USB…).<LineBreak/>
+                  <Run FontWeight="SemiBold" Text="3."/> Open it here, or drop it anywhere on this window.<LineBreak/>
+                  <Run FontWeight="SemiBold" Text="4."/> When you are done editing, export a CSV and import it in ManaBox.
+                </TextBlock>
+              </StackPanel>
+            </Border>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,22,0,0">
+              <Button x:Name="WelcomeOpenBtn" Content="Open ManaBox CSV…" Style="{StaticResource Primary}" Padding="20,10" FontSize="14"/>
+              <Button x:Name="WelcomeSampleBtn" Content="Try the sample collection" Margin="10,0,0,0" Padding="20,10" FontSize="14"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </TabItem>
+
+    <!-- ===================== DECKS ===================== -->
+    <TabItem Header="Decks">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="250"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0" Padding="12">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="DECKS" Foreground="{StaticResource Dim}" FontSize="11" FontWeight="SemiBold" Margin="4,2,0,8"/>
+            <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+              <Button x:Name="NewDeckBtn" Content="New deck" Style="{StaticResource Primary}"/>
+              <Button x:Name="ImportDeckBtn" Content="Import deck list…" Margin="0,6,0,0" ToolTip="Import a .txt deck list or a ManaBox deck CSV"/>
+              <Grid Margin="0,6,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="6"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="RenameDeckBtn" Content="Rename"/>
+                <Button x:Name="DeleteDeckBtn" Grid.Column="2" Content="Delete"/>
+              </Grid>
+            </StackPanel>
+            <ListBox x:Name="DeckList"/>
+          </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <Border Padding="14,12,14,6" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1">
+            <StackPanel>
+              <TextBlock x:Name="DeckTitle" Text="No deck selected" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,10"/>
+              <WrapPanel>
+                <TextBox x:Name="DeckAddBox" Width="250" Margin="0,0,6,6" Tag="Add a card by name, then press Enter"/>
+                <Button x:Name="DeckAddBtn" Content="Add" Margin="0,0,14,6"/>
+                <Button x:Name="DeckMinusBtn" Content="−1" Margin="0,0,6,6" MinWidth="42"/>
+                <Button x:Name="DeckPlusBtn" Content="+1" Margin="0,0,6,6" MinWidth="42"/>
+                <Button x:Name="DeckMoveBtn" Content="Main ⇄ Sideboard" Margin="0,0,6,6"/>
+                <Button x:Name="DeckRemoveBtn" Content="Remove" Margin="0,0,14,6"/>
+                <Button x:Name="DeckCopyBtn" Content="Copy list" Margin="0,0,6,6" ToolTip="Copy the deck list as text to the clipboard"/>
+                <Button x:Name="DeckExportTxtBtn" Content="Export .txt…" Margin="0,0,6,6"/>
+                <Button x:Name="DeckExportCsvBtn" Content="Export CSV…" Margin="0,0,6,6"/>
+                <Button x:Name="DeckPrintBtn" Content="Print…" Margin="0,0,6,6"/>
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+          <DataGrid x:Name="DeckGrid" Grid.Row="1" SelectionMode="Extended" CanUserSortColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Board" Binding="{Binding Board, Mode=OneTime}" Width="90"/>
+              <DataGridTextColumn Header="Qty" Binding="{Binding Qty, Mode=OneTime}" Width="52" ElementStyle="{StaticResource CellR}"/>
+              <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=OneTime}" Width="2*" ElementStyle="{StaticResource CellL}"/>
+              <DataGridTextColumn Header="Mana" Binding="{Binding ManaCost, Mode=OneTime}" Width="96" ElementStyle="{StaticResource CellL}"/>
+              <DataGridTextColumn Header="Type" Binding="{Binding TypeLine, Mode=OneTime}" Width="2*" ElementStyle="{StaticResource CellL}"/>
+              <DataGridTextColumn Header="Owned" Binding="{Binding OwnedText, Mode=OneTime}" Width="110"/>
+              <DataGridTextColumn Header="Price" Binding="{Binding PriceText, Mode=OneTime}" Width="84" ElementStyle="{StaticResource CellR}"/>
+              <DataGridTextColumn Header="Total" Binding="{Binding TotalText, Mode=OneTime}" Width="90" ElementStyle="{StaticResource CellGood}"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBlock x:Name="DeckEmpty" Grid.Row="1" Foreground="{StaticResource Dim}" FontSize="14" TextAlignment="Center"
+                     TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Text="Create a deck, then add cards by name here or with “Add to deck” on the Collection tab."/>
+        </Grid>
+
+        <Border Grid.Column="2" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1,0,0,0">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="DeckStats" Margin="18,16"/>
+          </ScrollViewer>
+        </Border>
+      </Grid>
+    </TabItem>
+
+    <!-- ===================== VALUE ===================== -->
+    <TabItem Header="Value">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="22,18,22,22">
+          <WrapPanel x:Name="ValueTiles"/>
+          <TextBlock x:Name="ValueNote" Foreground="{StaticResource Dim}" TextWrapping="Wrap" Margin="2,2,0,14"/>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="3*"/>
+              <ColumnDefinition Width="16"/>
+              <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+              <Border Background="{StaticResource Panel}" CornerRadius="10" Padding="18,14">
+                <StackPanel>
+                  <TextBlock x:Name="ChartTitle" Text="Collection value over time" FontWeight="SemiBold" FontSize="14"/>
+                  <TextBlock Foreground="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,3,0,10"
+                             Text="A snapshot is saved each day you open this collection with fresh prices."/>
+                  <Canvas x:Name="ChartCanvas" Height="260" ClipToBounds="True"/>
+                </StackPanel>
+              </Border>
+              <Border Background="{StaticResource Panel}" CornerRadius="10" Padding="18,14" Margin="0,16,0,0">
+                <StackPanel>
+                  <TextBlock Text="Value by rarity" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10"/>
+                  <StackPanel x:Name="ByRarity"/>
+                </StackPanel>
+              </Border>
+              <Border Background="{StaticResource Panel}" CornerRadius="10" Padding="18,14" Margin="0,16,0,0">
+                <StackPanel>
+                  <TextBlock Text="Most valuable sets" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10"/>
+                  <StackPanel x:Name="BySet"/>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <Border Grid.Column="2" Background="{StaticResource Panel}" CornerRadius="10" Padding="18,14" VerticalAlignment="Top">
+              <StackPanel>
+                <TextBlock Text="Most valuable cards" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10"/>
+                <StackPanel x:Name="TopCards"/>
+              </StackPanel>
+            </Border>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </TabItem>
+  </TabControl>
+
+  <Border Grid.Row="3" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="14,6">
+    <DockPanel>
+      <TextBlock x:Name="Credit" DockPanel.Dock="Right" Foreground="{StaticResource Dim}" FontSize="12"
+                 Text="Unofficial. Card data and images from Scryfall."/>
+      <TextBlock x:Name="Status" Foreground="{StaticResource Dim}" FontSize="12" TextTrimming="CharacterEllipsis"
+                 Text="Ready"/>
+    </DockPanel>
+  </Border>
+</Grid>
